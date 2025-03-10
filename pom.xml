@@ -17,7 +17,7 @@
     <groupId>org.eclipse</groupId>
     <artifactId>eclipse-platform-parent</artifactId>
     <version>4.36.0-SNAPSHOT</version>
-    <relativePath>../eclipse-platform-parent</relativePath>
+    <relativePath>../eclipse-platform</relativePath>
   </parent>
 
   <groupId>org.eclipse.platform</groupId>
@@ -29,13 +29,19 @@
     <code.ignoredWarnings>${tests.ignoredWarnings}</code.ignoredWarnings>
     <tycho.surefire.useUIHarness>true</tycho.surefire.useUIHarness><!--Use UI harness for tests by default -->
     <tycho.surefire.useUIThread>true</tycho.surefire.useUIThread>
+    <tests.ignoredWarnings>true</tests.ignoredWarnings>
     <failOnJavadocErrors>true</failOnJavadocErrors>
+      <maven.compiler.source>17</maven.compiler.source>
+      <maven.compiler.target>17</maven.compiler.target>
+    <tycho.version>4.0.10</tycho.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
   </properties>
 
   <modules>
-    <module>features</module>
-    <module>bundles</module>
-    <module>tests</module>
+<!--    <module>features</module>-->
+<!--    <module>bundles</module>-->
+<!--    <module>tests</module>-->
     <module>examples</module>
   </modules>
 
@@ -109,6 +115,23 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.tycho</groupId>
+            <artifactId>tycho-maven-plugin</artifactId>
+            <version>${tycho.version}</version>
+            <extensions>true</extensions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.tycho</groupId>
+            <artifactId>target-platform-configuration</artifactId>
+            <version>${tycho.version}</version>
+            <configuration>
+              <executionEnvironment>JavaSE-17</executionEnvironment>
+              <target>
+                <file>../target-platform/target-platform.target</file>
+              </target>
+            </configuration>
           </plugin>
         </plugins>
       </build>
