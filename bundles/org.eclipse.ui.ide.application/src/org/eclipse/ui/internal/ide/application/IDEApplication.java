@@ -123,6 +123,12 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 	private static final int RETRY_LOAD = 0;
 
 	/**
+	 * Return value when the user wants to cancel launch since workspace already
+	 * occupied
+	 */
+	private static final int CANCEL_LAUNCH = 2;
+
+	/**
 	 * A special return code that will be recognized by the PDE launcher and used to
 	 * show an error dialog if the workspace is locked.
 	 */
@@ -187,8 +193,13 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 
 			// if the exit code property has been set to the relaunch code, then
 			// return that code now, otherwise this is a normal restart
+//			int my_code =
+//			System.out.println("RETURNING MY COOOOOODE " + my_code); //$NON-NLS-1$
 			return EXIT_RELAUNCH.equals(Integer.getInteger(Workbench.PROP_EXIT_CODE)) ? EXIT_RELAUNCH
 					: EXIT_RESTART;
+
+//			return EXIT_RELAUNCH.equals(Integer.getInteger(Workbench.PROP_EXIT_CODE)) ? EXIT_RELAUNCH
+//					: EXIT_RESTART;
 		} finally {
 			if (display != null) {
 				display.dispose();
@@ -238,7 +249,10 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 		boolean force = false;
 
 		// -data "/valid/path", workspace already set
-		if (instanceLoc.isSet()) {
+
+//		if (instanceLoc.isSet()) {
+		if (false) {
+
 			// make sure the meta data version is compatible (or the user has
 			// chosen to overwrite it).
 			ReturnCode result = checkValidWorkspace(shell, instanceLoc.getURL());
@@ -301,22 +315,25 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 
 		// -data @noDefault or -data not specified => prompt and set
 		// -data is specified but invalid according to checkValidWorkspace(): re-launch
-		ChooseWorkspaceData launchData = new ChooseWorkspaceData(instanceLoc.getDefault());
+//		ChooseWorkspaceData launchData = new ChooseWorkspaceData(instanceLoc.getDefault());
+		ChooseWorkspaceData launchData = new ChooseWorkspaceData("C:\\"); //$NON-NLS-1$
 
-		boolean parentShellVisible = false;
-		if (isValid(shell)) {
-			parentShellVisible = shell.getVisible();
-			// bug 455162, bug 427393: hide the splash if the workspace
-			// prompt dialog should be opened
-			if (parentShellVisible && launchData.getShowDialog()) {
-				shell.setVisible(false);
-			}
-		}
+//		boolean parentShellVisible = false;
+//		if (isValid(shell)) {
+//			parentShellVisible = shell.getVisible();
+//			// bug 455162, bug 427393: hide the splash if the workspace
+//			// prompt dialog should be opened
+//			if (parentShellVisible && launchData.getShowDialog()) {
+//				shell.setVisible(false);
+//			}
+//		}
 
 		int returnValue = -1;
 		URL workspaceUrl = null;
 		while (true) {
+//			if (returnValue != RETRY_LOAD) {
 			if (returnValue != RETRY_LOAD) {
+
 				try {
 					workspaceUrl = promptForWorkspace(shell, launchData, force);
 				} catch (OperationCanceledException e) {
@@ -338,34 +355,28 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 			// dialog to open to give the user a chance to correct
 			force = true;
 
-			try {
-				if (instanceLoc.isSet()) {
-					// restart with new location
-					return Workbench.setRestartArguments(workspaceUrl.getFile());
-				}
-
-				// the operation will fail if the url is not a valid
-				// instance data area, so other checking is unneeded
-				if (instanceLoc.set(workspaceUrl, true)) {
-					launchData.writePersistedData();
-					writeWorkspaceVersion();
-					writeWsLockInfo(instanceLoc.getURL());
-					return null;
-				}
-			} catch (IllegalStateException e) {
-				MessageDialog
-						.openError(
-								shell,
-								IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetTitle,
-								IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetMessage);
-				return EXIT_OK;
-			} catch (IOException e) {
-				MessageDialog
-				.openError(
-						shell,
-						IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetTitle,
-						IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetMessage);
-			}
+//			try {
+//				if (instanceLoc.isSet()) {
+//					// restart with new location
+//					return Workbench.setRestartArguments(workspaceUrl.getFile());
+//				}
+//
+//				// the operation will fail if the url is not a valid
+//				// instance data area, so other checking is unneeded
+//				if (instanceLoc.set(workspaceUrl, true)) {
+//					launchData.writePersistedData();
+//					writeWorkspaceVersion();
+//					writeWsLockInfo(instanceLoc.getURL());
+//					return null;
+//				}
+//			} catch (IllegalStateException e) {
+//				MessageDialog.openError(shell, IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetTitle,
+//						IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetMessage);
+//				return EXIT_OK;
+//			} catch (IOException e) {
+//				MessageDialog.openError(shell, IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetTitle,
+//						IDEWorkbenchMessages.IDEApplication_workspaceCannotBeSetMessage);
+//			}
 
 			// by this point it has been determined that the workspace is
 			// already in use -- force the user to choose again
@@ -374,8 +385,9 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 
 			MessageDialog dialog = new MessageDialog(null, IDEWorkbenchMessages.IDEApplication_workspaceInUseTitle,
 					null, NLS.bind(IDEWorkbenchMessages.IDEApplication_workspaceInUseMessage, workspaceUrl.getFile()),
-					MessageDialog.ERROR, 1, IDEWorkbenchMessages.IDEApplication_workspaceInUse_Retry,
-					IDEWorkbenchMessages.IDEApplication_workspaceInUse_Choose) {
+					MessageDialog.ERROR, 2, IDEWorkbenchMessages.IDEApplication_workspaceInUse_Retry,
+					IDEWorkbenchMessages.IDEApplication_workspaceInUse_Choose,
+					IDEWorkbenchMessages.IDEApplication_workspaceInUse_Cancel) {
 				@Override
 				protected Control createCustomArea(Composite parent) {
 					if (lockInfo == null || lockInfo.isBlank()) {
@@ -392,7 +404,11 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 				}
 			};
 			// the return value influences the next loop's iteration
+
 			returnValue = dialog.open();
+			if (returnValue == CANCEL_LAUNCH) {
+				return EXIT_OK;
+			}
 			// Remember the locked workspace as recent workspace
 			launchData.writePersistedData();
 		}
